@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: Model Gateway Teaching API
+  version: 1.0.0
+  description: 使用DeepSeek真实模型，并保留假模型来学习并发限制、总截止时间、重试、熔断和降级。
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/chat:
+    post:
+      summary: 调用受保护的假模型网关
+      operationId: chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: 正常答案或明确标记的降级答案
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayResponse'
+        '400':
+          description: 请求参数不合法
+        '429':
+          description: 未能在限定时间内获得模型并发许可证
+        '502':
+          description: 模型永久拒绝该请求
+        '503':
+          description: 熔断器已打开或请求被取消
+        '504':
+          description: 完整请求超过总截止时间
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          example: 什么是虚拟线程？
+        simulation:
+          type: string
+          enum: [SUCCESS, SLOW, TEMPORARY_FAILURE, PERMANENT_FAILURE, INTERRUPTED]
+          example: SUCCESS
+          description: 仅在 MODEL_PROVIDER=fake 时用于故障模拟；真实DeepSeek调用会忽略该字段。
+    GatewayResponse:
+      type: object
+      required: [answer, attempts, degraded]
+      properties:
+        answer:
+          type: string
+        attempts:
+          type: integer
+          minimum: 1
+        degraded:
+          type: boolean

@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: model-gateway-demo
+
+server:
+  port: 8080
+  shutdown: graceful
+
+app:
+  model:
+    provider: ${MODEL_PROVIDER:deepseek}
+    deepseek:
+      base-url: https://api.deepseek.com
+      api-key: ${DEEPSEEK_API_KEY:}
+      model: ${DEEPSEEK_MODEL:deepseek-flash}
+      max-tokens: ${DEEPSEEK_MAX_TOKENS:1024}
+      system-prompt: 你是一个准确、清晰、简洁的中文助手。
+  model-gateway:
+    max-concurrency: 20
+    acquire-timeout: 500ms
+    request-timeout: 30s
+    max-attempts: 3
+    initial-backoff: 100ms
+    jitter: 50ms
+    circuit-breaker:
+      failure-threshold: 5
+      open-duration: 10s
+      half-open-permitted-calls: 2
+  fake-model:
+    slow-delay: 6s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
